@@ -95,11 +95,16 @@ def load_dogs(path):
 
 def load_data(prefix='/baldig/physicstest/'):
     # LOAD IMAGES FROM DIRECTORY
-    normal, normal_paths = load_dogs(prefix + 'ValleyFeverDogs/HealthyCropped/*')
-    normal1, normal_paths1 = load_dogs(prefix + 'ValleyFeverDogs/Healthy/*')
+    # normal, normal_paths = load_dogs(prefix + 'ValleyFeverDogs/HealthyCropped/*')
+    # normal1, normal_paths1 = load_dogs(prefix + 'ValleyFeverDogs/Healthy/*')
+    #
+    # cocci , cocci_paths  = load_dogs(prefix + 'ValleyFeverDogs/DiseaseCropped/*')
+    # cocci1 , cocci_paths1 = load_dogs(prefix + 'ValleyFeverDogs/Disease/*')
+    normal1, normal_paths1 = load_dogs('../data/HealthyCropped/*')
+    normal, normal_paths = [], []
 
-    cocci , cocci_paths  = load_dogs(prefix + 'ValleyFeverDogs/DiseaseCropped/*')
-    cocci1 , cocci_paths1 = load_dogs(prefix + 'ValleyFeverDogs/Disease/*')
+    cocci1, cocci_paths1 = load_dogs('../data/DiseaseCropped/*')
+    cocci, cocci_paths = [], []
 
     # COMBINE NORMAL + COCCI - SET TARGETS
     X = np.array(
@@ -123,6 +128,7 @@ def load_data(prefix='/baldig/physicstest/'):
     unique_labels = np.array(
         [[1,0]] * len(normal1) + [[0,1]] * len(cocci1)
     )
+    print(unique_labels, unique_paths)
     return X[idxs] / 255., Y[idxs], df_paths.iloc[idxs], (unique_paths, unique_labels)
 
 
@@ -163,7 +169,7 @@ def cross_validation(args):
     # DETERMINE TYPE OF CROSS VALIDATION
     if args['cross_val'] == 'stratified':
         kf    = StratifiedKFold(n_splits=args['num_folds'], random_state=42)
-        split = kf.split(unique_paths, np.argmax(unique_labels, -1))
+        split = [[[0], [1]]] # kf.split(unique_paths, np.argmax(unique_labels, -1))
     else:
         kf    = KFold(n_splits=args['num_folds'], random_state=42)
         split = kf.split(X)
@@ -178,8 +184,8 @@ def cross_validation(args):
         print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
         print(y_train.sum(axis=0), y_test.sum(axis=0))
 
-        for i in range(5):
-            print(p_train.iloc[i].path)
+        # for i in range(2):
+        #     print(p_train.iloc[i].path)
 
         yield fold, (x_train, x_test, y_train, y_test), (p_train, p_test)
 
@@ -282,17 +288,17 @@ def cam(args):
         'Test ACC:', test_acc, np.sum(test_targets) / float(len(test_targets))
     )
 
-    os.makedirs('CAM/Select_no_color_%d' % args['sherpa_trial'], exist_ok=True)
+    os.makedirs('../results/CAM/%d' % args['sherpa_trial'], exist_ok=True)
 
     def plot(predictions, targets, images, original_images, path_info, prefix=''):
         for i in range(len(targets)):
-            if i < 140: continue
-            file_path = 'CAM/Select_no_color_{}/{}{}_pred_{}_true_{}'.format(args['sherpa_trial'], prefix, i, predictions[i], targets[i])
+            # if i < 140: continue
+            file_path = '../results/CAM/{}/{}{}'.format(args['sherpa_trial'], prefix, i)
 
             cam = visualize_cam(
                 model,
                 len(model.layers) - 1,
-                predictions[i], #[0,1],
+                predictions[i],
                 images[i][np.newaxis]
             )
 
@@ -311,7 +317,7 @@ def cam(args):
 
     print(len(train_predictions), len(train_targets), len(x_train_samples), len(x_train))
     plot(test_predictions, test_targets, x_test_samples, x_test, p_test, prefix='test_')
-    # plot(train_predictions, train_targets, x_train_samples, x_train, p_train, prefix='train_')
+    plot(train_predictions, train_targets, x_train_samples, x_train, p_train, prefix='train_')
 
 
 def plot_confusion_matrix(cm, args=None, prefix='', classes=['Healthy', 'Cocci'], ax=None):
