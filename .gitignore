@@ -1,0 +1,9 @@
+Dogs
+.ipynb_checkpoints
+*.pyc
+__pycache__
+SherpaResults*
+Models*
+Results*
+results.csv
+CAM*
